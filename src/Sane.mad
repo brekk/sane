@@ -1,0 +1,86 @@
+import { apL } from "Applicative"
+import { mapLeft } from "Either"
+import IO from "IO"
+import List from "List"
+import P from "Parse"
+import String from "String"
+
+
+
+export type Attribute = Attribute(String, String)
+export alias Attributes = List Attribute
+
+// <tag keyAttribute="keyValue">body</tag>
+/**
+ * XMLTags are composed of:
+ * - tag - String
+ * - attributes - List Attribute
+ * - body - String
+ */
+export type XmlTag = DocType(Attributes) | XmlTag(String, Attributes, String) | XmlComment(String)
+
+export alias XML = List XmlTag
+
+escapedChar :: P.Parser String
+escapedChar = do {
+  backslash <- P.char('\\')
+  escaped <- P.anyChar
+  return pipe(
+    String.fromList,
+    of,
+  )([backslash, escaped])
+}
+
+
+attribute :: P.Parser Attribute
+export attribute = do {
+  key <- pipe(
+    P.manyTill(P.anyChar),
+    map(
+      pipe(
+        String.fromList,
+        String.trim,
+      ),
+    ),
+  )(P.lookAhead(P.string(`="`)))
+  _ <- P.char('=')
+  _ <- P.char('"')
+  value <- pipe(
+    map(String.singleton),
+    alt($, escapedChar),
+    P.many,
+    map(List.reduce(mappend, "")),
+  )(P.notOneOf(['"', '\\']))
+  _ <- P.char('"')
+
+  return pipe(
+    Attribute(key),
+    of,
+  )(value)
+}
+
+doctype :: P.Parser XmlTag
+export doctype = do {
+  _ <- P.string("<?xml")
+  attrs <- P.some(P.token(attribute))
+  _ <- P.token(P.string("?>"))
+  return pipe(
+    DocType,
+    of,
+  )(attrs)
+}
+
+comment :: P.Parser XmlTag
+export comment = do {
+  _ <- P.string("<!--")
+  chars <- pipe(
+    P.someTill($, P.lookAhead(P.string("-->"))),
+  )(P.anyChar)
+  _ <- P.token(P.string("-->"))
+  return pipe(
+    String.fromList,
+    String.trim,
+    XmlComment,
+    of,
+  )(chars)
+}

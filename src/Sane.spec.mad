@@ -1,0 +1,31 @@
+import type { Attribute } from "@/Sane"
+
+import { report } from "Study"
+import { parseTest } from "Study/Parse"
+
+import { Attribute, DocType, XmlComment, XmlTag, attribute, comment, doctype } from "@/Exmail"
+
+
+
+parseTest("attribute", attribute, `whatever="cool"`, Attribute("whatever", "cool"))
+
+parseTest(
+  "attribute with spaces",
+  attribute,
+  `whatever="cool school fool"`,
+  Attribute("whatever", "cool school fool"),
+)
+
+parseTest(
+  "doctype",
+  doctype,
+  `<?xml version="1.0" encoding="ISO-8859-1"?>`,
+  DocType([Attribute("version", "1.0"), Attribute("encoding", "ISO-8859-1")]),
+)
+
+parseTest(
+  "comment",
+  comment,
+  `<!-- This is totally a comment. -->`,
+  XmlComment("This is totally a comment."),
+)
