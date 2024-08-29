@@ -20,7 +20,9 @@ export alias Attributes = List Attribute
 export type XmlTag
   = Declaration(Attributes)
   | EmptyTag(String, Attributes)
-  | XmlTag(String, Attributes, String)
+  // | XmlTag(String, Attributes)
+  | TextTag(String)
+  | ParentTag(XmlTag, List XmlTag)
   | XmlComment(String)
 
 export alias XML = List XmlTag
@@ -105,8 +107,8 @@ export emptyElementTagWithAttributes = do {
 }
 
 
-emptyElementTag :: P.Parser XmlTag
-export emptyElementTag = do {
+emptyElementTagNoAttributes :: P.Parser XmlTag
+export emptyElementTagNoAttributes = do {
   _ <- P.char('<')
   tagStart <- pipe(
     P.someTill(P.anyChar),
@@ -120,6 +122,33 @@ export emptyElementTag = do {
   _ <- P.token(P.string("/>"))
   return pipe(
     EmptyTag($, []),
+    of,
+  )(tagStart)
+}
+
+export emptyElementTag = P.choice([emptyElementTagWithAttributes, emptyElementTagNoAttributes])
+
+element :: P.Parser XmlTag
+export element = do {
+  _ <- P.char('<')
+  tagStart <- pipe(
+    P.someTill(P.anyChar),
+    map(String.fromList),
+  )(P.lookAhead(P.oneOf([' ', '>'])))
+  attrs <- P.manyTill(P.token(attribute), P.lookAhead(P.string(">")))
+  _ <- P.token(P.string(">"))
+  body <- P.manyTill(
+    P.choice([
+      element,
+      pipe(
+        P.many(P.anyChar),
+        TextTag,
+      ),
+    ]),
+    P.string("</" ++ tagStart ++ ">"),
+  )
+  return pipe(
+    ParentTag($, attrs, body),
     of,
   )(tagStart)
 }

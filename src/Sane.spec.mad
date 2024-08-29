@@ -55,8 +55,8 @@ parseTest(
 )
 
 parseTest(
-  "emptyElementTagWithAttributes",
-  emptyElementTagWithAttributes,
+  "emptyElementTag - with attributes",
+  emptyElementTag,
   `<zipzap cool="nice" dope="nope" />`,
   EmptyTag("zipzap", [Attribute("cool", "nice"), Attribute("dope", "nope")]),
 )
