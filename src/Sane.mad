@@ -26,7 +26,7 @@ export type XmlTag
 export alias XML = List XmlTag
 
 escapedChar :: P.Parser String
-escapedChar = do {
+export escapedChar = do {
   backslash <- P.char('\\')
   escaped <- P.anyChar
   return pipe(
@@ -89,17 +89,37 @@ export comment = do {
   )(chars)
 }
 
-emptyElementTag :: P.Parser XmlTag
-export emptyElementTag = do {
+emptyElementTagWithAttributes :: P.Parser XmlTag
+export emptyElementTagWithAttributes = do {
   _ <- P.char('<')
   tagStart <- pipe(
     P.someTill(P.anyChar),
     map(String.fromList),
   )(P.oneOf(['/', ' ']))
-  attrs <- P.manyTill(P.token(attribute), P.lookAhead(P.string("/>"))) <|> pure([])
+  attrs <- P.manyTill(P.token(attribute), P.lookAhead(P.string("/>")))
   _ <- P.token(P.string("/>"))
   return pipe(
     EmptyTag($, attrs),
+    of,
+  )(tagStart)
+}
+
+
+emptyElementTag :: P.Parser XmlTag
+export emptyElementTag = do {
+  _ <- P.char('<')
+  tagStart <- pipe(
+    P.someTill(P.anyChar),
+    map(
+      pipe(
+        String.fromList,
+        String.trim,
+      ),
+    ),
+  )(P.char('/'))
+  _ <- P.token(P.string("/>"))
+  return pipe(
+    EmptyTag($, []),
     of,
   )(tagStart)
 }
