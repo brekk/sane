@@ -17,7 +17,11 @@ export alias Attributes = List Attribute
  * - attributes - List Attribute
  * - body - String
  */
-export type XmlTag = DocType(Attributes) | XmlTag(String, Attributes, String) | XmlComment(String)
+export type XmlTag
+  = Declaration(Attributes)
+  | EmptyTag(String, Attributes)
+  | XmlTag(String, Attributes, String)
+  | XmlComment(String)
 
 export alias XML = List XmlTag
 
@@ -59,13 +63,13 @@ export attribute = do {
   )(value)
 }
 
-doctype :: P.Parser XmlTag
-export doctype = do {
+declaration :: P.Parser XmlTag
+export declaration = do {
   _ <- P.string("<?xml")
   attrs <- P.some(P.token(attribute))
   _ <- P.token(P.string("?>"))
   return pipe(
-    DocType,
+    Declaration,
     of,
   )(attrs)
 }
@@ -83,4 +87,19 @@ export comment = do {
     XmlComment,
     of,
   )(chars)
+}
+
+emptyElementTag :: P.Parser XmlTag
+export emptyElementTag = do {
+  _ <- P.char('<')
+  tagStart <- pipe(
+    P.someTill(P.anyChar),
+    map(String.fromList),
+  )(P.oneOf(['/', ' ']))
+  attrs <- P.manyTill(P.token(attribute), P.lookAhead(P.string("/>"))) <|> pure([])
+  _ <- P.token(P.string("/>"))
+  return pipe(
+    EmptyTag($, attrs),
+    of,
+  )(tagStart)
 }

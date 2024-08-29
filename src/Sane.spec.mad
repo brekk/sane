@@ -3,7 +3,17 @@ import type { Attribute } from "@/Sane"
 import { report } from "Study"
 import { parseTest } from "Study/Parse"
 
-import { Attribute, DocType, XmlComment, XmlTag, attribute, comment, doctype } from "@/Exmail"
+import {
+  Attribute,
+  Declaration,
+  EmptyTag,
+  XmlComment,
+  XmlTag,
+  attribute,
+  comment,
+  declaration,
+  emptyElementTag,
+} from "@/Sane"
 
 
 
@@ -17,10 +27,10 @@ parseTest(
 )
 
 parseTest(
-  "doctype",
-  doctype,
+  "declaration",
+  declaration,
   `<?xml version="1.0" encoding="ISO-8859-1"?>`,
-  DocType([Attribute("version", "1.0"), Attribute("encoding", "ISO-8859-1")]),
+  Declaration([Attribute("version", "1.0"), Attribute("encoding", "ISO-8859-1")]),
 )
 
 parseTest(
@@ -29,3 +39,12 @@ parseTest(
   `<!-- This is totally a comment. -->`,
   XmlComment("This is totally a comment."),
 )
+
+parseTest(
+  "emptyElementTag - with attributes",
+  emptyElementTag,
+  `<zipzap cool="nice" dope="nope" />`,
+  EmptyTag("zipzap", [Attribute("cool", "nice"), Attribute("dope", "nope")]),
+)
+
+// parseTest("emptyElementTag - no attributes", emptyElementTag, `<void />`, EmptyTag("void", []))
