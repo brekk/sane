@@ -7,6 +7,7 @@ import {
   Attribute,
   Declaration,
   EmptyTag,
+  TextTag,
   XmlComment,
   attribute,
   comment,
@@ -14,6 +15,7 @@ import {
   emptyElementTag,
   // emptyElementTagWithAttributes,
   escapedChar,
+  textTag,
 } from "@/Sane"
 
 
@@ -78,3 +80,4 @@ parseTest(
   `<void             />`,
   EmptyTag("void", []),
 )
+parseTest("textTag", textTag, `<p>I love paragraphs!</p>`, TextTag("p", "I love paragraphs!"))

@@ -6,6 +6,8 @@ import List from "List"
 import P from "Parse"
 import String from "String"
 
+import { mark } from "@/String"
+
 
 
 export type Attribute = Attribute(String, String)
@@ -22,7 +24,7 @@ export type XmlTag
   = Declaration(Attributes)
   | EmptyTag(String, Attributes)
   // | XmlTag(String, Attributes)
-  | TextTag(String)
+  | TextTag(String, String)
   | ParentTag(XmlTag, List XmlTag)
   | XmlComment(String)
 
@@ -43,12 +45,7 @@ attribute :: P.Parser Attribute
 export attribute = do {
   key <- pipe(
     P.manyTill(P.anyChar),
-    map(
-      pipe(
-        String.fromList,
-        String.trim,
-      ),
-    ),
+    map(mark),
   )(P.lookAhead(P.string(`="`)))
   _ <- P.char('=')
   _ <- P.char('"')
@@ -85,39 +82,55 @@ export comment = do {
   )(P.anyChar)
   _ <- P.token(P.string("-->"))
   return pipe(
-    String.fromList,
-    String.trim,
+    mark,
     XmlComment,
     of,
   )(chars)
 }
+
+spaces = pipe(
+  P.char,
+  P.many,
+  map(always([])),
+)(' ')
 
 emptyElementTag :: P.Parser XmlTag
 export emptyElementTag = do {
   _ <- P.char('<')
   tagStart <- pipe(
     P.manyTill(P.anyChar),
-    map(
-      pipe(
-        String.fromList,
-        String.trim,
-      ),
-    ),
+    map(mark),
   )(P.lookAhead(P.oneOf(['/', ' '])))
   attribution = P.manyTill(P.token(attribute), P.string("/>"))
-  spaced = pipe(
-    P.char,
-    P.some,
-    map(always([])),
-  )(' ')
-  attrs <- P.choice([attribution, spaced])
-  _ <- pipe(
-    P.char,
-    P.many,
-  )(' ')
+  attrs <- attribution <|> spaces
+  _ <- spaces
   _ <- P.string("/>")
   return pipe(
     EmptyTag($, attrs),
+    of,
+  )(tagStart)
+}
+
+textTag :: P.Parser XmlTag
+export textTag = do {
+  _ <- P.char('<')
+  tagStart <- pipe(
+    P.manyTill(P.anyChar),
+    map(mark),
+  )(P.lookAhead(P.oneOf([' ', '>'])))
+  attribution = P.manyTill(P.token(attribute), P.char('>'))
+  spaced = spaces
+  attrs <- attribution <|> spaced
+  _ <- spaces
+  _ <- P.char('>')
+  endTagParser = P.string("</" ++ tagStart ++ ">")
+  text <- pipe(
+    P.manyTill(P.anyChar),
+    map(mark),
+  )(P.lookAhead(endTagParser))
+  _ <- endTagParser
+  return pipe(
+    TextTag($, text),
     of,
   )(tagStart)
 }

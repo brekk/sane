@@ -1,0 +1,8 @@
+import String from "String"
+
+
+
+export mark = pipe(
+  String.fromList,
+  String.trim,
+)
