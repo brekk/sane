@@ -23,45 +23,12 @@ export alias Attributes = List Attribute
 export type XmlTag
   = Declaration(Attributes)
   | EmptyTag(String, Attributes)
-  // | XmlTag(String, Attributes)
+  | Text(String)
   | TextTag(String, String)
   | ParentTag(XmlTag, List XmlTag)
   | XmlComment(String)
 
 export alias XML = List XmlTag
-
-escapedChar :: P.Parser String
-export escapedChar = do {
-  backslash <- P.char('\\')
-  escaped <- P.anyChar
-  return pipe(
-    String.fromList,
-    of,
-  )([backslash, escaped])
-}
-
-
-attribute :: P.Parser Attribute
-export attribute = do {
-  key <- pipe(
-    P.manyTill(P.anyChar),
-    map(mark),
-  )(P.lookAhead(P.string(`="`)))
-  _ <- P.char('=')
-  _ <- P.char('"')
-  value <- pipe(
-    map(String.singleton),
-    alt($, escapedChar),
-    P.many,
-    map(List.reduce(mappend, "")),
-  )(P.notOneOf(['"', '\\']))
-  _ <- P.char('"')
-
-  return pipe(
-    Attribute(key),
-    of,
-  )(value)
-}
 
 declaration :: P.Parser XmlTag
 export declaration = do {
@@ -118,19 +85,62 @@ export textTag = do {
     P.manyTill(P.anyChar),
     map(mark),
   )(P.lookAhead(P.oneOf([' ', '>'])))
-  attribution = P.manyTill(P.token(attribute), P.char('>'))
-  spaced = spaces
-  attrs <- attribution <|> spaced
+  attrs <- P.manyTill(P.token(attribute), P.char('>')) <|> spaces
   _ <- spaces
   _ <- P.char('>')
   endTagParser = P.string("</" ++ tagStart ++ ">")
-  text <- pipe(
+  txt <- pipe(
     P.manyTill(P.anyChar),
     map(mark),
   )(P.lookAhead(endTagParser))
   _ <- endTagParser
   return pipe(
-    TextTag($, text),
+    TextTag($, txt),
     of,
   )(tagStart)
+}
+export text = do {
+  raw <- pipe(
+    P.manyTill(P.notChar('<')),
+    map(String.fromList),
+  )(P.lookAhead(P.choice([P.eof, map(always({}), P.char('<'))])))
+  return pipe(
+    Text,
+    of,
+  )(raw)
+}
+
+export mixed = P.some(P.choice([text, textTag]))
+
+
+attribute :: P.Parser Attribute
+export attribute = do {
+  key <- pipe(
+    P.manyTill(P.anyChar),
+    map(mark),
+  )(P.lookAhead(P.string(`="`)))
+  _ <- P.char('=')
+  _ <- P.char('"')
+  value <- pipe(
+    map(String.singleton),
+    alt($, escapedChar),
+    P.many,
+    map(List.reduce(mappend, "")),
+  )(P.notOneOf(['"', '\\']))
+  _ <- P.char('"')
+
+  return pipe(
+    Attribute(key),
+    of,
+  )(value)
+}
+
+escapedChar :: P.Parser String
+export escapedChar = do {
+  backslash <- P.char('\\')
+  escaped <- P.anyChar
+  return pipe(
+    String.fromList,
+    of,
+  )([backslash, escaped])
 }

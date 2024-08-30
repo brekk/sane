@@ -7,6 +7,7 @@ import {
   Attribute,
   Declaration,
   EmptyTag,
+  Text,
   TextTag,
   XmlComment,
   attribute,
@@ -15,6 +16,8 @@ import {
   emptyElementTag,
   // emptyElementTagWithAttributes,
   escapedChar,
+  mixed,
+  text,
   textTag,
 } from "@/Sane"
 
@@ -81,3 +84,18 @@ parseTest(
   EmptyTag("void", []),
 )
 parseTest("textTag", textTag, `<p>I love paragraphs!</p>`, TextTag("p", "I love paragraphs!"))
+
+/*
+// this fails as expected!
+parseTest(
+  "textTag - no closing tag",
+  textTag,
+  `<p>I love paragraphs!`,
+  TextTag("p", "I love paragraphs!"),
+)
+*/
+
+parseTest("text", text, "This is text!", Text("This is text!"))
+parseTest("text", text, "", Text(""))
+
+parseTest("mixed", mixed, "<p>This is</p>", [])
