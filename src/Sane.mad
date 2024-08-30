@@ -1,5 +1,6 @@
 import { apL } from "Applicative"
 import { mapLeft } from "Either"
+import { always } from "Function"
 import IO from "IO"
 import List from "List"
 import P from "Parse"
@@ -96,59 +97,27 @@ export emptyElementTag = do {
   _ <- P.char('<')
   tagStart <- pipe(
     P.manyTill(P.anyChar),
-    map(String.fromList),
-  )(P.oneOf(['/', ' ']))
-  attrs <- P.manyTill(P.token(attribute), P.string("/>")) <|> pure([])
-  _ <- P.token(P.string("/>"))
+    map(
+      pipe(
+        String.fromList,
+        String.trim,
+      ),
+    ),
+  )(P.lookAhead(P.oneOf(['/', ' '])))
+  attribution = P.manyTill(P.token(attribute), P.string("/>"))
+  spaced = pipe(
+    P.char,
+    P.some,
+    map(always([])),
+  )(' ')
+  attrs <- P.choice([attribution, spaced])
+  _ <- pipe(
+    P.char,
+    P.many,
+  )(' ')
+  _ <- P.string("/>")
   return pipe(
     EmptyTag($, attrs),
     of,
   )(tagStart)
 }
-
-// emptyElementTagNoAttributes :: P.Parser XmlTag
-// export emptyElementTagNoAttributes = do {
-//   _ <- P.char('<')
-//   tagStart <- pipe(
-//     P.someTill(P.anyChar),
-//     map(
-//       pipe(
-//         String.fromList,
-//         String.trim,
-//       ),
-//     ),
-//   )(P.char('/'))
-//   _ <- P.token(P.string("/>"))
-//   return pipe(
-//     EmptyTag($, []),
-//     of,
-//   )(tagStart)
-// }
-//
-// export emptyElementTag = P.choice([emptyElementTagWithAttributes, emptyElementTagNoAttributes])
-/*
-element :: P.Parser XmlTag
-export element = do {
-  _ <- P.char('<')
-  tagStart <- pipe(
-    P.someTill(P.anyChar),
-    map(String.fromList),
-  )(P.lookAhead(P.oneOf([' ', '>'])))
-  attrs <- P.manyTill(P.token(attribute), P.lookAhead(P.string(">")))
-  _ <- P.token(P.string(">"))
-  body <- P.manyTill(
-    P.choice([
-      element,
-      pipe(
-        P.many(P.anyChar),
-        TextTag,
-      ),
-    ]),
-    P.string("</" ++ tagStart ++ ">"),
-  )
-  return pipe(
-    ParentTag($, attrs, body),
-    of,
-  )(tagStart)
-}
-*/

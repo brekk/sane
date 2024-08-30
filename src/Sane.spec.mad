@@ -8,7 +8,6 @@ import {
   Declaration,
   EmptyTag,
   XmlComment,
-  // XmlTag,
   attribute,
   comment,
   declaration,
@@ -61,4 +60,21 @@ parseTest(
   EmptyTag("zipzap", [Attribute("cool", "nice"), Attribute("dope", "nope")]),
 )
 
-parseTest("emptyElementTag - no attributes", emptyElementTag, `<void />`, EmptyTag("void", []))
+parseTest(
+  "emptyElementTag - no attributes, no space",
+  emptyElementTag,
+  `<void/>`,
+  EmptyTag("void", []),
+)
+parseTest(
+  "emptyElementTag - no attributes, single space",
+  emptyElementTag,
+  `<void />`,
+  EmptyTag("void", []),
+)
+parseTest(
+  "emptyElementTag - no attributes, many spaces",
+  emptyElementTag,
+  `<void             />`,
+  EmptyTag("void", []),
+)
