@@ -91,14 +91,14 @@ export comment = do {
   )(chars)
 }
 
-emptyElementTagWithAttributes :: P.Parser XmlTag
-export emptyElementTagWithAttributes = do {
+emptyElementTag :: P.Parser XmlTag
+export emptyElementTag = do {
   _ <- P.char('<')
   tagStart <- pipe(
-    P.someTill(P.anyChar),
+    P.manyTill(P.anyChar),
     map(String.fromList),
   )(P.oneOf(['/', ' ']))
-  attrs <- P.manyTill(P.token(attribute), P.lookAhead(P.string("/>")))
+  attrs <- P.manyTill(P.token(attribute), P.string("/>")) <|> pure([])
   _ <- P.token(P.string("/>"))
   return pipe(
     EmptyTag($, attrs),
@@ -106,28 +106,27 @@ export emptyElementTagWithAttributes = do {
   )(tagStart)
 }
 
-
-emptyElementTagNoAttributes :: P.Parser XmlTag
-export emptyElementTagNoAttributes = do {
-  _ <- P.char('<')
-  tagStart <- pipe(
-    P.someTill(P.anyChar),
-    map(
-      pipe(
-        String.fromList,
-        String.trim,
-      ),
-    ),
-  )(P.char('/'))
-  _ <- P.token(P.string("/>"))
-  return pipe(
-    EmptyTag($, []),
-    of,
-  )(tagStart)
-}
-
-export emptyElementTag = P.choice([emptyElementTagWithAttributes, emptyElementTagNoAttributes])
-
+// emptyElementTagNoAttributes :: P.Parser XmlTag
+// export emptyElementTagNoAttributes = do {
+//   _ <- P.char('<')
+//   tagStart <- pipe(
+//     P.someTill(P.anyChar),
+//     map(
+//       pipe(
+//         String.fromList,
+//         String.trim,
+//       ),
+//     ),
+//   )(P.char('/'))
+//   _ <- P.token(P.string("/>"))
+//   return pipe(
+//     EmptyTag($, []),
+//     of,
+//   )(tagStart)
+// }
+//
+// export emptyElementTag = P.choice([emptyElementTagWithAttributes, emptyElementTagNoAttributes])
+/*
 element :: P.Parser XmlTag
 export element = do {
   _ <- P.char('<')
@@ -152,3 +151,4 @@ export element = do {
     of,
   )(tagStart)
 }
+*/

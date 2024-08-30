@@ -8,12 +8,12 @@ import {
   Declaration,
   EmptyTag,
   XmlComment,
-  XmlTag,
+  // XmlTag,
   attribute,
   comment,
   declaration,
   emptyElementTag,
-  emptyElementTagWithAttributes,
+  // emptyElementTagWithAttributes,
   escapedChar,
 } from "@/Sane"
 
